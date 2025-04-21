@@ -16,46 +16,35 @@ model = load_model('Stock Predictions Model.keras')
 # Page Configuration
 st.set_page_config(page_title="🔮 PrediStock", layout="wide")
 
-# === Custom Styling ===
-st.markdown(""" 
+# === Custom Styling for Light Mode ===
+st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;600&display=swap');
-    html, body, [class*="css"] {
-        font-family: 'Poppins', sans-serif;
-        background-color: #f7f9fc;
-        color: #2c3e50;
-    }
-    .stApp {
-        background: linear-gradient(to bottom right, #fdfbfb, #ebedee);
-        padding: 1rem;
-    }
-    h1, h2, h3 {
-        color: #1a1a2e;
-        font-weight: 600;
-        margin-bottom: 0.4em;
-    }
-    .stButton>button {
-        background-color: #1a73e8;
-        color: white;
-        font-weight: bold;
-        border-radius: 8px;
-        padding: 0.5em 1.2em;
-        transition: all 0.3s ease-in-out;
-    }
-    .stButton>button:hover {
-        background-color: #1558d6;
-        transform: scale(1.03);
+    /* Force Light Mode */
+    body {
+        background-color: #ffffff;  /* White background for light mode */
+        color: #333333;  /* Dark text for contrast */
     }
 
-    /* Force light mode */
-    .css-18e3th9 { 
-        background-color: #ffffff !important;
+    .stApp {
+        background: #f7f9fc;  /* Light gray background for the app container */
     }
-    .css-1d391kg { 
-        background-color: #ffffff !important;
+
+    .stButton>button {
+        background-color: #4CAF50;  /* Light green button */
+        color: white;
+        font-weight: bold;
     }
-    .css-1d391kg, .css-1v0w8zj {
-        color: #000000 !important;
+
+    .stButton>button:hover {
+        background-color: #45a049;  /* Darker green on hover */
+    }
+
+    .stTitle {
+        color: #333333;  /* Dark text for titles */
+    }
+
+    .stHeader, .stSidebar {
+        background-color: #f1f1f1;  /* Light background for header and sidebar */
     }
     </style>
 """, unsafe_allow_html=True)
