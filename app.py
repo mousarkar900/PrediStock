@@ -16,35 +16,44 @@ model = load_model('Stock Predictions Model.keras')
 # Page Configuration
 st.set_page_config(page_title="🔮 PrediStock", layout="wide")
 
-# === Custom Styling for Light Mode ===
-st.markdown("""
+# === Custom Styling for Consistent Light Mode ===
+st.markdown(""" 
     <style>
-    /* Force Light Mode */
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;600&display=swap');
+
+    html, body, [class*="css"] {
+        font-family: 'Poppins', sans-serif;
+        background-color: #f7f9fc !important;
+        color: #2c3e50 !important;
+    }
+
     body {
-        background-color: #ffffff;  /* White background for light mode */
-        color: #333333;  /* Dark text for contrast */
+        color-scheme: light !important;
     }
 
     .stApp {
-        background: #f7f9fc;  /* Light gray background for the app container */
+        background: linear-gradient(to bottom right, #fdfbfb, #ebedee) !important;
+        padding: 1rem;
+    }
+
+    h1, h2, h3 {
+        color: #1a1a2e !important;
+        font-weight: 600;
+        margin-bottom: 0.4em;
     }
 
     .stButton>button {
-        background-color: #4CAF50;  /* Light green button */
-        color: white;
+        background-color: #1a73e8 !important;
+        color: white !important;
         font-weight: bold;
+        border-radius: 8px;
+        padding: 0.5em 1.2em;
+        transition: all 0.3s ease-in-out;
     }
 
     .stButton>button:hover {
-        background-color: #45a049;  /* Darker green on hover */
-    }
-
-    .stTitle {
-        color: #333333;  /* Dark text for titles */
-    }
-
-    .stHeader, .stSidebar {
-        background-color: #f1f1f1;  /* Light background for header and sidebar */
+        background-color: #1558d6 !important;
+        transform: scale(1.03);
     }
     </style>
 """, unsafe_allow_html=True)
