@@ -16,43 +16,34 @@ model = load_model('Stock Predictions Model.keras')
 # Page Configuration
 st.set_page_config(page_title="🔮 PrediStock", layout="wide")
 
-# === Custom Styling for Consistent Light Mode ===
+# === Custom Styling ===
 st.markdown(""" 
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;600&display=swap');
-
     html, body, [class*="css"] {
         font-family: 'Poppins', sans-serif;
-        background-color: #f7f9fc !important;
-        color: #2c3e50 !important;
+        background-color: #f7f9fc;
+        color: #2c3e50;
     }
-
-    body {
-        color-scheme: light !important;
-    }
-
     .stApp {
-        background: linear-gradient(to bottom right, #fdfbfb, #ebedee) !important;
+        background: linear-gradient(to bottom right, #fdfbfb, #ebedee);
         padding: 1rem;
     }
-
     h1, h2, h3 {
-        color: #1a1a2e !important;
+        color: #1a1a2e;
         font-weight: 600;
         margin-bottom: 0.4em;
     }
-
     .stButton>button {
-        background-color: #1a73e8 !important;
-        color: white !important;
+        background-color: #1a73e8;
+        color: white;
         font-weight: bold;
         border-radius: 8px;
         padding: 0.5em 1.2em;
         transition: all 0.3s ease-in-out;
     }
-
     .stButton>button:hover {
-        background-color: #1558d6 !important;
+        background-color: #1558d6;
         transform: scale(1.03);
     }
     </style>
