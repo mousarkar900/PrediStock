@@ -6,4 +6,6 @@ tensorflow
 yfinance
 matplotlib
 newsapi-python
+textblob
+
 
