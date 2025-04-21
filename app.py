@@ -46,6 +46,17 @@ st.markdown("""
         background-color: #1558d6;
         transform: scale(1.03);
     }
+
+    /* Force light mode */
+    .css-18e3th9 { 
+        background-color: #ffffff !important;
+    }
+    .css-1d391kg { 
+        background-color: #ffffff !important;
+    }
+    .css-1d391kg, .css-1v0w8zj {
+        color: #000000 !important;
+    }
     </style>
 """, unsafe_allow_html=True)
 
