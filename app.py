@@ -244,7 +244,7 @@ st.download_button(
 )
 
 st.markdown("## 📰 News Sentiment Analysis")
-news_api_key = st.secrets.get("NEWS_API_KEY")
+news_api_key = "93d80761b0fd4605986a09ff0a31f41e"
 if news_api_key:
     newsapi = NewsApiClient(api_key=news_api_key)
     try:
