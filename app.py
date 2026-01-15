@@ -24,35 +24,41 @@ except:
 st.title("📈 PrediStock – AI Stock Predictor")
 st.caption("Deep Learning powered Stock Price Forecasting")
 
-# -------------------- Sidebar --------------------
-st.sidebar.header("Configuration")
-stock = st.sidebar.text_input("Enter Stock Symbol (e.g. AAPL, TSLA)")
+# -------------------- Stock Input and Submit --------------------
+stock_input = st.sidebar.text_input("Enter Stock Symbol (e.g., TSLA)").strip().upper()
+submit = st.sidebar.button("Fetch Stock Data")  # User must click to fetch
 
-start_date = None
-end_date = None
+# Stop until user presses submit
+if not submit:
+    st.info("Enter a stock symbol and press 'Fetch Stock Data'")
+    st.stop()
 
-# -------------------- Fetch stock history and let user pick dates --------------------
-stock = stock.strip().upper()  # Clean the input
+# Only run after submit
+if submit:
+    if not stock_input:
+        st.error("Enter a valid stock symbol")
+        st.stop()
 
-if stock:
     try:
-        raw = yf.download(stock, period="max")
+        # Fetch full history to get min/max dates
+        raw = yf.download(stock_input, period="max")
         if raw.empty:
-            st.sidebar.error("Invalid stock symbol")
+            st.error("Invalid symbol or no data")
             st.stop()
         else:
+            stock = stock_input  # Confirmed valid
             min_date = raw.index.min().date()
             max_date = datetime.date.today()
 
             st.sidebar.info(f"Select a date range (from {min_date} to {max_date})")
 
-            # Let user pick start and end dates (no defaults)
+            # Let user pick start and end dates
             start_date = st.sidebar.date_input("Start Date", min_value=min_date, max_value=max_date, key="start")
             end_date = st.sidebar.date_input("End Date", min_value=min_date, max_value=max_date, key="end")
 
-            # Stop if dates not selected
+            # Validate dates
             if not start_date or not end_date:
-                st.info("Please select both start and end dates to continue")
+                st.info("Please select both start and end dates")
                 st.stop()
 
             if start_date >= end_date:
@@ -68,9 +74,7 @@ if stock:
     except Exception as e:
         st.error(f"Failed to fetch stock data: {e}")
         st.stop()
-else:
-    st.info("Enter a stock symbol to begin")
-    st.stop()
+
 
 
 # -------------------- Input Validation --------------------
