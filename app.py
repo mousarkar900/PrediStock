@@ -15,7 +15,7 @@ st.set_page_config(page_title="PrediStock", layout="wide")
 
 # -------------------- Load Model --------------------
 try:
-    model = load_model("Stock Predictions Model.keras")
+    model = load_model("Stock_Predictions_Model.keras")
 except:
     st.error("Model file not found")
     st.stop()
