@@ -33,20 +33,14 @@ if not stock:
     st.info("Enter a stock symbol to begin")
     st.stop()
 
-# ================= VALIDATE TICKER FIRST =================
+# ================= VALIDATE TICKER =================
 @st.cache_data(ttl=3600)
 def validate_ticker(symbol):
     """Check if the ticker symbol actually exists on Yahoo Finance."""
     try:
         ticker = yf.Ticker(symbol)
-        info = ticker.info
-        # If ticker is invalid, yf returns minimal info or empty dict
-        if not info or info.get("regularMarketPrice") is None:
-            # Fallback check: try fetching 5 days of data
-            test_df = ticker.history(period="5d")
-            if test_df.empty:
-                return False
-        return True
+        test_df = ticker.history(period="5d")
+        return not test_df.empty
     except Exception:
         return False
 
@@ -63,27 +57,23 @@ def fetch_stock_data(symbol):
             start="2010-01-01",
             end=datetime.date.today(),
             progress=False,
-            auto_adjust=True  # This avoids Adj Close issues
+            auto_adjust=True
         )
 
-        # ------- KEY FIX: HANDLE MULTI-INDEX COLUMNS -------
-        # yf.download() can return MultiIndex columns like ('Close', 'AAPL')
-        # This happens especially when deployed on cloud servers
+        # Handle MultiIndex columns
         if isinstance(df.columns, pd.MultiIndex):
             df.columns = df.columns.get_level_values(0)
 
-        # Remove any duplicate column names after flattening
+        # Remove duplicate column names
         df = df.loc[:, ~df.columns.duplicated()]
 
         if df.empty:
             return None
 
-        # ------- KEY FIX: VERIFY 'Close' COLUMN EXISTS -------
         if "Close" not in df.columns:
             st.error(f"Available columns: {list(df.columns)}")
             return None
 
-        # Ensure the Close column has no issues
         df["Close"] = pd.to_numeric(df["Close"], errors="coerce")
         df.dropna(subset=["Close"], inplace=True)
 
@@ -104,13 +94,6 @@ if data is None or len(data) < 200:
         f"Got {len(data) if data is not None else 0} rows, need at least 200."
     )
     st.stop()
-
-# ================= DEBUG INFO (remove after fixing) =================
-with st.expander("Debug Info"):
-    st.write("Data shape:", data.shape)
-    st.write("Columns:", list(data.columns))
-    st.write("Column types:", data.dtypes.to_dict())
-    st.write("First 3 rows:", data.head(3))
 
 # ================= DATE RANGE =================
 min_date = data.index.min().date()
@@ -145,25 +128,22 @@ st.subheader(f"Stock Data – {stock}")
 st.dataframe(data.tail(200))
 
 # ================= MOVING AVERAGES =================
-# ------- KEY FIX: Use data["Close"] instead of data.Close -------
-# Attribute access can fail with certain column configurations
 close_prices = data["Close"]
 
-ma50 = close_prices.rolling(50).mean()
+ma50  = close_prices.rolling(50).mean()
 ma100 = close_prices.rolling(100).mean()
 ma200 = close_prices.rolling(200).mean()
 
 st.subheader("Moving Averages")
 fig1 = plt.figure(figsize=(10, 5))
 plt.plot(close_prices, label="Close")
-plt.plot(ma50, label="MA50")
+plt.plot(ma50,  label="MA50")
 plt.plot(ma100, label="MA100")
 plt.plot(ma200, label="MA200")
 plt.legend()
 st.pyplot(fig1)
 
 # ================= PREPARE DATA =================
-# ------- KEY FIX: Ensure correct shape for scaler -------
 close_values = close_prices.values.reshape(-1, 1).astype(np.float64)
 
 scaler = MinMaxScaler(feature_range=(0, 1))
@@ -179,19 +159,19 @@ x, y = np.array(x), np.array(y)
 # ================= PREDICTION =================
 predicted = model.predict(x)
 predicted = scaler.inverse_transform(predicted)
-y_actual = scaler.inverse_transform(y)
+y_actual  = scaler.inverse_transform(y)
 
 # ================= PLOT PREDICTION =================
 st.subheader("Actual vs Predicted Prices")
 fig2 = plt.figure(figsize=(10, 5))
-plt.plot(y_actual, label="Actual")
+plt.plot(y_actual,  label="Actual")
 plt.plot(predicted, label="Predicted")
 plt.legend()
 st.pyplot(fig2)
 
 # ================= DOWNLOAD CSV =================
 result_df = pd.DataFrame({
-    "Actual": y_actual.flatten(),
+    "Actual":    y_actual.flatten(),
     "Predicted": predicted.flatten()
 })
 
@@ -204,37 +184,97 @@ st.download_button(
 # ================= NEWS SENTIMENT =================
 st.subheader("News Sentiment Analysis")
 
-try:
-    newsapi = NewsApiClient(api_key="93d80761b0fd4605986a09ff0a31f41e")
-    news = newsapi.get_everything(
-        q=stock,
-        language="en",
-        page_size=10
-    )
+def get_news_api_key():
+    """Try to get API key from secrets, then fallback to hardcoded."""
+    try:
+        return st.secrets["NEWS_API_KEY"]
+    except Exception:
+        return "93d80761b0fd4605986a09ff0a31f41e"
 
-    if news and news.get("articles"):
-        headlines = [a["title"] for a in news["articles"] if a.get("title")]
-        sentiments = [TextBlob(h).sentiment.polarity for h in headlines]
+def fetch_news(symbol):
+    """Fetch news articles for a given stock symbol."""
+    try:
+        api_key = get_news_api_key()
+        newsapi = NewsApiClient(api_key=api_key)
 
-        labels = [
-            "Positive" if s > 0 else "Negative" if s < 0 else "Neutral"
-            for s in sentiments
+        # Try full company name search first, then ticker
+        news = newsapi.get_everything(
+            q=symbol,
+            language="en",
+            sort_by="publishedAt",
+            page_size=10
+        )
+
+        articles = news.get("articles", []) if news else []
+
+        # Filter out removed/deleted articles
+        articles = [
+            a for a in articles
+            if a.get("title") and a["title"] != "[Removed]"
         ]
 
-        sent_df = pd.DataFrame({
-            "Headline": headlines,
-            "Sentiment": labels
-        })
+        return articles
 
-        st.dataframe(sent_df)
+    except Exception as e:
+        st.warning(f"NewsAPI error: {e}")
+        return []
 
-        fig3 = plt.figure()
-        sent_df["Sentiment"].value_counts().plot(kind="bar")
+def analyze_sentiment(articles):
+    """Run TextBlob sentiment on article headlines."""
+    headlines  = [a["title"] for a in articles]
+    urls       = [a.get("url", "#") for a in articles]
+    sentiments = [TextBlob(h).sentiment.polarity for h in headlines]
+
+    labels = [
+        "Positive" if s > 0.05 else "Negative" if s < -0.05 else "Neutral"
+        for s in sentiments
+    ]
+
+    return pd.DataFrame({
+        "Headline":        headlines,
+        "Sentiment":       labels,
+        "Polarity Score":  [round(s, 3) for s in sentiments],
+        "URL":             urls
+    })
+
+articles = fetch_news(stock)
+
+if articles:
+    sent_df = analyze_sentiment(articles)
+    st.dataframe(sent_df[["Headline", "Sentiment", "Polarity Score"]])
+
+    # Sentiment bar chart
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.markdown("**Sentiment Distribution**")
+        fig3, ax3 = plt.subplots()
+        counts = sent_df["Sentiment"].value_counts()
+        colors = {
+            "Positive": "#2ecc71",
+            "Negative": "#e74c3c",
+            "Neutral":  "#95a5a6"
+        }
+        bar_colors = [colors.get(c, "#95a5a6") for c in counts.index]
+        counts.plot(kind="bar", ax=ax3, color=bar_colors)
+        ax3.set_xlabel("")
+        ax3.set_ylabel("Count")
+        ax3.set_title(f"News Sentiment for {stock}")
+        plt.xticks(rotation=0)
         st.pyplot(fig3)
-    else:
-        st.warning("No news articles found")
 
-except Exception as e:
-    st.warning(f"News data unavailable: {e}")
+    with col2:
+        st.markdown("**Overall Sentiment Score**")
+        avg_score = sent_df["Polarity Score"].mean()
+        if avg_score > 0.05:
+            overall = "🟢 Positive"
+        elif avg_score < -0.05:
+            overall = "🔴 Negative"
+        else:
+            overall = "🟡 Neutral"
+        st.metric("Average Polarity", f"{avg_score:.3f}", overall)
+
+else:
+    st.warning("No news articles found for this stock. Try a different symbol or check your API key.")
 
 st.success("Forecast Complete")
